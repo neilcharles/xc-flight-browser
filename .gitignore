@@ -1,0 +1,9 @@
+node_modules
+dist
+.DS_Store
+*.local
+.Rhistory
+.Rproj.user
+# The source flight archive contains pilot names: never commit it.
+*.csv
+!data-raw/*.csv
