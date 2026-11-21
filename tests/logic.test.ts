@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { type RawData, decode, decodePath, isoToDay, soloParagliders } from '../src/lib/data';
-import { applyFilters, changedCount, defaultFilters, emptyFilters } from '../src/lib/filters';
+import { applyFilters, changedCount, defaultFilters, emptyFilters, facetCounts } from '../src/lib/filters';
 import { filtersFromQuery, filtersToQuery } from '../src/lib/urlState';
 import { distColour, popupHtml, sitePopupHtml, xcLeagueUrl } from '../src/lib/format';
 
@@ -99,6 +99,30 @@ describe('filters', () => {
     expect(changedCount(d, d)).toBe(0);
     expect(changedCount({ ...d, to: '2025-02-01', wind: ['N'], minDist: 5 }, d)).toBe(3);
     expect(changedCount({ ...d, wind: ['W', 'N'] }, { ...d, wind: ['N', 'W'] })).toBe(0);
+  });
+});
+
+describe('cascading filter options', () => {
+  it('counts every flight per option with no filters, skipping unknown wind', () => {
+    const c = facetCounts(data, emptyFilters());
+    expect(c.sites).toEqual([3, 1]);
+    expect(c.gliders).toEqual([3, 1]);
+    expect(c.wind).toEqual([0, 0, 0, 0, 0, 0, 2, 1]);
+  });
+  it('narrows other lists to flights matching the selection', () => {
+    const c = facetCounts(data, { ...emptyFilters(), gliders: ['Ozone Zeno 2'] });
+    expect(c.sites).toEqual([1, 0]);
+    expect(c.en).toEqual([0, 1, 0]);
+    expect(c.wind).toEqual([0, 0, 0, 0, 0, 0, 0, 1]);
+  });
+  it("ignores a list's own selection, so its other options stay available", () => {
+    const c = facetCounts(data, { ...emptyFilters(), gliders: ['Ozone Zeno 2'] });
+    expect(c.gliders).toEqual([3, 1]);
+  });
+  it('applies date and distance to every list', () => {
+    const c = facetCounts(data, { ...emptyFilters(), minDist: 50 });
+    expect(c.sites).toEqual([1, 1]);
+    expect(c.gliders).toEqual([1, 1]);
   });
 });
 

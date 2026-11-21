@@ -88,17 +88,21 @@
   });
 
   // Takeoff markers for listed sites that have at least one flight drawn on the map right now.
-  // They sit in their own pane above the flight lines so they stay clickable.
+  // They sit in their own pane above the flight lines so they stay clickable. The pane uses SVG
+  // with pointer-events off: a canvas here would cover the whole map and swallow every mouse
+  // event meant for the flight-line canvas below. Leaflet re-enables events on the marker paths.
   const siteMarkers = new Map<number, L.CircleMarker>();
-  let sitesRenderer: L.Canvas | null = null;
+  let sitesRenderer: L.SVG | null = null;
   function siteMarker(i: number): L.CircleMarker | null {
     const s = data.sites[i];
     if (!s.listed || s.lat === undefined || s.lon === undefined) return null;
     let m = siteMarkers.get(i);
     if (!m) {
       if (!sitesRenderer) {
-        map.createPane('sites').style.zIndex = '460';
-        sitesRenderer = L.canvas({ pane: 'sites' });
+        const pane = map.createPane('sites');
+        pane.style.zIndex = '460';
+        pane.style.pointerEvents = 'none';
+        sitesRenderer = L.svg({ pane: 'sites' });
       }
       m = L.circleMarker([s.lat, s.lon], { renderer: sitesRenderer, pane: 'sites', radius: 5, weight: 2, color: '#ffffff', fillColor: '#2b4364', fillOpacity: 1 })
         .bindTooltip(s.name, { direction: 'top', offset: [0, -6] })

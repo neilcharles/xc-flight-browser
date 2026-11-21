@@ -54,6 +54,47 @@ function indexSet(names: string[], levels: string[]): Set<number> | null {
   return s;
 }
 
+/** The list filters, each paired with the flight field it matches. */
+export const FACETS = { sites: 'site', gliders: 'glider', en: 'en', types: 'type', wind: 'wdir' } as const;
+export type Facet = keyof typeof FACETS;
+
+/**
+ * Flight counts per option for each list filter, counting the flights that pass every *other*
+ * filter. Options with a zero count can't add any flights given the rest of the selection, so the
+ * panel hides them; that makes the filters cascade. One pass over the flights.
+ */
+export function facetCounts(data: Dataset, f: Filters): Record<Facet, number[]> {
+  const from = f.from ? isoToDay(f.from) : -Infinity;
+  const to = f.to ? isoToDay(f.to) : Infinity;
+  const levels: Record<Facet, string[]> = {
+    sites: data.sites.map((s) => s.name),
+    gliders: data.gliders,
+    en: data.en,
+    types: data.types,
+    wind: data.sectors,
+  };
+  const keys = Object.keys(FACETS) as Facet[];
+  const sets = keys.map((k) => indexSet(f[k], levels[k]));
+  const counts = Object.fromEntries(keys.map((k) => [k, new Array(levels[k].length).fill(0)])) as Record<Facet, number[]>;
+  for (const x of data.flights) {
+    if (x.day < from || x.day > to || x.dist < f.minDist) continue;
+    let failed = -1;
+    let nFailed = 0;
+    for (let k = 0; k < keys.length; k++) {
+      const s = sets[k];
+      if (s && !s.has(x[FACETS[keys[k]]]) && ++nFailed === 1) failed = k;
+      if (nFailed > 1) break;
+    }
+    if (nFailed > 1) continue;
+    for (let k = 0; k < keys.length; k++) {
+      if (nFailed === 1 && k !== failed) continue;
+      const v = x[FACETS[keys[k]]];
+      if (v >= 0) counts[keys[k]][v]++;
+    }
+  }
+  return counts;
+}
+
 /** Matching flights, longest first. */
 export function applyFilters(data: Dataset, f: Filters): Flight[] {
   const from = f.from ? isoToDay(f.from) : -Infinity;

@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { Dataset } from '../lib/data';
-  import type { Filters } from '../lib/filters';
+  import { type Facet, type Filters, facetCounts } from '../lib/filters';
   import DateRange from './DateRange.svelte';
   import Dropdown from './Dropdown.svelte';
   import MultiSelect from './MultiSelect.svelte';
@@ -14,28 +14,17 @@
 
   const set = <K extends keyof Filters>(k: K, v: Filters[K]) => onChange({ ...filters, [k]: v });
 
-  function counts(key: 'site' | 'glider', n: number): number[] {
-    const c = new Array(n).fill(0);
-    for (const f of data.flights) c[f[key]]++;
-    return c;
-  }
-  // Only options that have flights (tandem / hang glider flights are dropped on load).
-  const siteOptions = $derived.by(() => {
-    const c = counts('site', data.sites.length);
-    return data.sites
-      .map((s, i) => ({ value: s.name, count: c[i] }))
-      .filter((o) => o.count > 0);
-  });
-  const gliderOptions = $derived.by(() => {
-    const c = counts('glider', data.gliders.length);
-    return data.gliders.map((g, i) => ({ value: g, count: c[i] })).filter((o) => o.count > 0);
-  });
-  const present = (levels: string[], key: 'en' | 'type') => {
-    const used = new Set(data.flights.map((f) => f[key]));
-    return levels.filter((_, i) => used.has(i));
-  };
-  const enOptions = $derived(present(data.en, 'en'));
-  const typeOptions = $derived(present(data.types, 'type'));
+  // Cascading options: each list only offers values that have flights under the other filters.
+  // Values already selected stay listed (even at zero) so they can still be removed.
+  const counts = $derived(facetCounts(data, filters));
+  const available = (k: Facet, levels: string[]) =>
+    levels.map((value, i) => ({ value, count: counts[k][i] })).filter((o) => o.count > 0 || filters[k].includes(o.value));
+
+  const siteOptions = $derived(available('sites', data.sites.map((s) => s.name)));
+  const gliderOptions = $derived(available('gliders', data.gliders));
+  const windOptions = $derived(available('wind', data.sectors).map((o) => o.value));
+  const enOptions = $derived(available('en', data.en).map((o) => o.value));
+  const typeOptions = $derived(available('types', data.types).map((o) => o.value));
 </script>
 
 <div class="filters">
@@ -49,7 +38,7 @@
   </div>
 
   <MultiSelect label="Takeoff site" placeholder="Search sites…" options={siteOptions} selected={filters.sites} onChange={(v) => set('sites', v)} />
-  <Dropdown label="Wind" options={data.sectors} selected={filters.wind} onChange={(v) => set('wind', v)} />
+  <Dropdown label="Wind" options={windOptions} selected={filters.wind} onChange={(v) => set('wind', v)} />
   <MultiSelect label="Wing" placeholder="Search wings…" options={gliderOptions} selected={filters.gliders} onChange={(v) => set('gliders', v)} />
   <Dropdown label="EN rating" options={enOptions} selected={filters.en} onChange={(v) => set('en', v)} />
   <Dropdown label="Flight type" options={typeOptions} selected={filters.types} onChange={(v) => set('types', v)} />

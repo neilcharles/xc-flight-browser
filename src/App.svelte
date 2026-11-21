@@ -54,7 +54,7 @@
   <aside class:open={sheetOpen}>
     <header>
       <div class="title">
-        <svg viewBox="0 0 32 32" width="30" height="30" aria-hidden="true"><rect width="32" height="32" rx="7" fill="var(--primary)"/><path d="M5 17c4-7 18-7 22 0" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round"/><path d="M8 25l6-5 4 3 6-6" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <svg viewBox="0 0 32 32" width="30" height="30" aria-hidden="true"><rect width="32" height="32" rx="7" fill="var(--primary)"/><path d="M5 11.5Q16 2.5 27 11.5Q16 7.5 5 11.5Z" fill="#fff" stroke="#fff" stroke-width="1.2" stroke-linejoin="round"/><path d="M6.5 11.2L16 18.5L25.5 11.2M11 8.6L16 18.5L21 8.6" fill="none" stroke="#fff" stroke-opacity=".55" stroke-width=".8"/><circle cx="16" cy="19.2" r="1.7" fill="#fff"/><path d="M5 26.5C9 23 12 27.5 16 25S23 21.5 27 23.5" fill="none" stroke="var(--accent)" stroke-width="2.4" stroke-linecap="round"/></svg>
         <h1>UK XC Browser</h1>
         {#if nActive}<button class="reset" onclick={() => (filters = defaults)}>Reset</button>{/if}
         <button class="close" aria-label="Close" onclick={() => (sheetOpen = false)}>×</button>
